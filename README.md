@@ -252,6 +252,34 @@ Built-in and third-party plugins are loaded through the `plugins/` subsystem.
 
 ---
 
+## GitPretty Setup (Per-File Pretty Commits)
+
+If you want GitHub's file UI to show visually distinct commit messages per file, use the helper script in this repo:
+
+```bash
+bash ./gitpretty-apply.sh .
+```
+
+This will:
+
+1. Clone `gitpretty` into `~/.gitpretty` (first run only)
+2. Make scripts executable
+3. Run `emoji-file-commits.sh` against this repo
+
+Optional: install auto-emoji hooks for future commits:
+
+```bash
+bash ./gitpretty-apply.sh . --hooks
+```
+
+After running, push as usual:
+
+```bash
+git push origin main
+```
+
+---
+
 ## Disclaimer
 
 This repository archives source code that was leaked from Anthropic's npm registry on **2026-03-31**. All original source code is the property of [Anthropic](https://www.anthropic.com). Contact [nichxbt](https://www.x.com/nichxbt) for any comments.
