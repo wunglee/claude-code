@@ -4,7 +4,7 @@ A standalone [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) se
 
 ## What It Does
 
-Exposes 7 tools and 3 resources for navigating the ~1,900-file, 512K+ line Claude Code codebase:
+Exposes 7 tools, 3 resources, and 5 prompts for navigating the ~1,900-file, 512K+ line Claude Code codebase:
 
 ### Tools
 
@@ -27,6 +27,16 @@ Exposes 7 tools and 3 resources for navigating the ~1,900-file, 512K+ line Claud
 | `claude-code://tools` | Tool registry (JSON) |
 | `claude-code://commands` | Command registry (JSON) |
 | `claude-code://source/{path}` | Any source file (template) |
+
+### Prompts
+
+| Prompt | Description |
+|--------|-------------|
+| `explain_tool` | Deep-dive explanation of a specific tool's purpose, schema, permissions, and flow |
+| `explain_command` | Explanation of a specific slash command's behavior and implementation |
+| `architecture_overview` | Guided tour of the full Claude Code architecture |
+| `how_does_it_work` | Explain a feature/subsystem (permissions, MCP, bridge, etc.) |
+| `compare_tools` | Side-by-side comparison of two tools |
 
 ## Setup
 
@@ -99,6 +109,18 @@ Add to `~/.cursor/mcp.json`:
 |----------|---------|-------------|
 | `CLAUDE_CODE_SRC_ROOT` | `../src` (relative to dist/) | Path to the Claude Code `src/` directory |
 
+## Prompts
+
+The server also exposes prompt templates for guided exploration:
+
+| Prompt | Description |
+|--------|-------------|
+| `explain_tool` | Deep-dive explanation of a specific tool (input schema, permissions, execution flow) |
+| `explain_command` | Explain how a slash command works |
+| `architecture_overview` | Guided tour of the entire Claude Code architecture |
+| `how_does_it_work` | Explain a feature or subsystem (e.g. "permission system", "MCP client", "query engine") |
+| `compare_tools` | Side-by-side comparison of two tools |
+
 ## Example Usage
 
 Once connected, you can ask your AI assistant things like:
@@ -109,11 +131,14 @@ Once connected, you can ask your AI assistant things like:
 - "What files are in the bridge directory?"
 - "Read the QueryEngine.ts file, lines 1-100"
 - "How does the MCP client connection work?"
+- Use the `explain_tool` prompt with "FileEditTool" to get a full breakdown
+- Use `how_does_it_work` with "bridge" to understand IDE integration
 
 ## Development
 
 ```bash
-npm run dev    # Watch mode — recompile on changes
-npm run build  # One-time build
-npm start      # Run the server
+npm install
+npm run dev    # Run directly with tsx (no build needed)
+npm run build  # Compile TypeScript to dist/
+npm start      # Run compiled server
 ```

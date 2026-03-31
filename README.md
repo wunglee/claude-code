@@ -1,3 +1,5 @@
+> **Note:** The original unmodified leaked source is preserved in the [`backup` branch](https://github.com/nirholas/claude-code/tree/backup).
+
 # Claude Code — Leaked Source (2026-03-31)
 
 > **On March 31, 2026, the full source code of Anthropic's Claude Code CLI was leaked** via a `.map` file exposed in their npm registry.

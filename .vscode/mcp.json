@@ -2,8 +2,8 @@
   "servers": {
     "claude-code-explorer": {
       "type": "stdio",
-      "command": "node",
-      "args": ["${workspaceFolder}/mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["tsx", "${workspaceFolder}/mcp-server/src/index.ts"],
       "env": {
         "CLAUDE_CODE_SRC_ROOT": "${workspaceFolder}/src"
       }
