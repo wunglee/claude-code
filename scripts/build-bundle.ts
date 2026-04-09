@@ -159,6 +159,9 @@ const buildOptions: esbuild.BuildOptions = {
 
   plugins: [srcResolverPlugin, stubMissingPlugin],
 
+  // Inject require shim so CommonJS modules can use require() in ESM context
+  inject: [resolve(ROOT, 'scripts/require-shim.ts')],
+
   // Use tsconfig for baseUrl / paths resolution (complements plugin above)
   tsconfig: resolve(ROOT, 'tsconfig.json'),
 

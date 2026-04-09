@@ -72,6 +72,11 @@ export async function assertMinVersion(): Promise<void> {
     return
   }
 
+  // Skip version check for leaked/custom builds (marked with -leaked suffix)
+  if (MACRO.VERSION.includes('-leaked')) {
+    return
+  }
+
   try {
     const versionConfig = await getDynamicConfig_BLOCKS_ON_INIT<{
       minVersion: string

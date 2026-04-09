@@ -10,6 +10,7 @@
     "claude": "src/entrypoints/cli.tsx"
   },
   "scripts": {
+    "dev": "bun scripts/dev.ts",
     "build": "bun scripts/build-bundle.ts",
     "build:watch": "bun scripts/build-bundle.ts --watch",
     "build:prod": "bun scripts/build-bundle.ts --minify",
