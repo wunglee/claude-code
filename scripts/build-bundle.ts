@@ -276,6 +276,28 @@ const buildOptions: esbuild.BuildOptions = {
 }
 
 async function main() {
+  // ── Auto-patch SDK Headers before building ─────────────────────────────────
+  // The SDK's createResponseHeaders lacks .get() and .forEach() methods,
+  // which causes errors when handling HTTP error responses.
+  // This ensures the patch is always applied before building.
+  const patchScript = resolve(ROOT, 'scripts/patch-sdk-headers.sh')
+  if (existsSync(patchScript)) {
+    try {
+      console.log('🔧 Auto-patching SDK Headers...')
+      const { execSync } = await import('child_process')
+      execSync(`bash "${patchScript}"`, { 
+        cwd: ROOT, 
+        stdio: 'pipe',
+        timeout: 30000 
+      })
+      console.log('✅ SDK Headers patched')
+    } catch (e) {
+      // Patch failure is not fatal - SDK might already be patched or different version
+      console.log('⚠️  SDK patch skipped (may already be patched or SDK changed)')
+    }
+  }
+  console.log()
+
   if (watch) {
     const ctx = await esbuild.context(buildOptions)
     await ctx.watch()
