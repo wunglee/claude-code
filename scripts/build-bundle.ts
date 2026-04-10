@@ -6,6 +6,7 @@
 // Watch mode:       bun scripts/build-bundle.ts --watch
 
 import * as esbuild from 'esbuild'
+import type { PluginBuild } from 'esbuild'
 import { resolve, dirname } from 'path'
 import { chmodSync, readFileSync, existsSync } from 'fs'
 import { fileURLToPath } from 'url'
@@ -74,7 +75,7 @@ const srcResolverPlugin: esbuild.Plugin = {
 // At runtime, feature() gates prevent these stubs from being called.
 const stubMissingPlugin: esbuild.Plugin = {
   name: 'stub-missing',
-  setup(build) {
+  setup(build: PluginBuild) {
     // Catch all @ant/* package imports (Anthropic-internal, not published) →
     // route them all to a single shim file that exports the needed symbols.
     const antStubPath = resolve(ROOT, 'src/shims/ant-stub.ts')

@@ -13,6 +13,25 @@ declare module 'esbuild' {
       options: { filter: RegExp },
       callback: (args: OnResolveArgs) => OnResolveResult | undefined | null,
     ): void
+    onLoad(
+      options: { filter: RegExp; namespace?: string },
+      callback: (args: OnLoadArgs) => OnLoadResult | null | undefined | Promise<OnLoadResult | null | undefined>,
+    ): void
+  }
+
+  export interface OnLoadArgs {
+    path: string
+    namespace: string
+    suffix: string
+    pluginData: unknown
+  }
+
+  export interface OnLoadResult {
+    contents?: string
+    loader?: 'js' | 'jsx' | 'ts' | 'tsx' | 'json' | 'text' | 'base64' | 'binary' | 'dataurl' | 'file' | 'css'
+    errors?: unknown[]
+    warnings?: unknown[]
+    pluginData?: unknown
   }
 
   export interface OnResolveArgs {

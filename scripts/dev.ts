@@ -10,6 +10,9 @@
 //
 // Note: SDK Headers are patched automatically during 'bun install' via postinstall hook.
 
+// Make this file a module so top-level await is allowed
+export {}
+
 // Load MACRO global (version, package url, etc.) before any app code
 await import('../src/shims/macro.js')
 
