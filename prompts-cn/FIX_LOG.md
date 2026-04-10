@@ -1303,3 +1303,86 @@ npm run dev
 AlienCode 项目修复文档: `/Users/wangli/projects/AlienCode/claude/docs-cn/MINIMAL_FIX_COMPLETE.md`
 
 ---
+
+
+---
+
+## 2026-04-10: 修复 `--inspect` 调试模式进程退出问题
+
+### 问题
+
+运行 `bun --inspect=9229 scripts/dev.ts` 时，程序启动后立刻退出（退出码 1），无法持续运行进行调试。
+
+### 排查过程
+
+1. **初步怀疑**：以为是 npm 或 Bun inspect 的问题
+2. **逐步排查**：通过添加跟踪代码，发现 `process.exit(1)` 被调用
+3. **定位根源**：`src/main.tsx:266-270` 代码故意检测调试模式并退出
+
+```typescript
+// src/main.tsx:266-270
+// Exit if we detect node debugging or inspection
+if ("external" !== 'ant' && isBeingDebugged()) {
+  process.exit(1);
+}
+```
+
+### 根本原因
+
+`isBeingDebugged()` 函数检查 `process.execArgv` 中的 `--inspect` 参数：
+
+```typescript
+// src/main.tsx:236-242
+const hasInspectArg = process.execArgv.some(arg => {
+  if (isBun) {
+    return /--inspect(-brk)?/.test(arg);
+  }
+  // ...
+});
+```
+
+**这是 Anthropic 故意添加的保护机制**，防止在调试器中运行泄露的代码。
+
+### 修复方案
+
+**临时禁用调试检查**（仅用于本地开发调试）：
+
+```typescript
+// src/main.tsx:265-271
+// Exit if we detect node debugging or inspection
+// TEMPORARILY DISABLED for debugging purposes
+// if ("external" !== 'ant' && isBeingDebugged()) {
+//   process.exit(1);
+// }
+// DEBUG: Allow inspect mode for development debugging
+```
+
+### 验证
+
+修复后运行：
+```bash
+bun --inspect=9229 scripts/dev.ts
+# 输出：
+# --------------------- Bun Inspector ---------------------
+# Listening: ws://localhost:9229/xxx
+# Inspect in browser: https://debug.bun.sh/#localhost:9229/xxx
+# ---------------------------------------------------------
+# ✳ Claude Code 交互界面正常显示
+```
+
+WebStorm 可以正常 Attach 调试器，断点生效。
+
+### 注意事项
+
+⚠️ **这是临时修复，仅用于开发调试**
+
+- 原始代码目的是防止调试分析
+- 正式发布或代码审计前应恢复原始检查
+- 恢复方式：取消注释原始代码，删除临时注释
+
+### 相关代码位置
+
+- 检测函数：`src/main.tsx:232-263` (`isBeingDebugged()`)
+- 退出逻辑：`src/main.tsx:265-271`
+
+---

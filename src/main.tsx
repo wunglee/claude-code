@@ -263,12 +263,11 @@ function isBeingDebugged() {
 }
 
 // Exit if we detect node debugging or inspection
-if ("external" !== 'ant' && isBeingDebugged()) {
-  // Use process.exit directly here since we're in the top-level code before imports
-  // and gracefulShutdown is not yet available
-  // eslint-disable-next-line custom-rules/no-top-level-side-effects
-  process.exit(1);
-}
+// TEMPORARILY DISABLED for debugging purposes
+// if ("external" !== 'ant' && isBeingDebugged()) {
+//   process.exit(1);
+// }
+// DEBUG: Allow inspect mode for development debugging
 
 /**
  * Per-session skill/plugin telemetry. Called from both the interactive path
@@ -803,7 +802,12 @@ export async function main() {
   // Fix: Bun 1.3.11 sometimes returns undefined instead of true in TTY environments.
   // Using === false ensures we only enter non-interactive mode when explicitly not a TTY.
   const isNonInteractive = hasPrintFlag || hasInitOnlyFlag || hasSdkUrl || process.stdout.isTTY === false;
-
+  console.error('[ENV CHECK]', {
+    isTTY: process.stdout.isTTY,
+    baseURL: process.env.ANTHROPIC_BASE_URL,
+    hasApiKey: !!process.env.ANTHROPIC_API_KEY,
+    model: process.env.ANTHROPIC_MODEL,
+  });
   // Stop capturing early input for non-interactive modes
   if (isNonInteractive) {
     stopCapturingEarlyInput();

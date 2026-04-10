@@ -11,7 +11,7 @@
   },
   "scripts": {
     "postinstall": "bash scripts/patch-sdk-headers.sh || true",
-    "dev": "bun scripts/dev.ts",
+    "dev": "bun --inspect=9229 scripts/dev.ts",
     "build": "bun scripts/build-bundle.ts",
     "build:watch": "bun scripts/build-bundle.ts --watch",
     "build:prod": "bun scripts/build-bundle.ts --minify",
@@ -30,7 +30,9 @@
     "db:studio": "drizzle-kit studio",
     "package:npm": "bun scripts/package-npm.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "testenv": "bun scripts/test-env-check.ts",
+    "testinspect": "bun --inspect=9229 scripts/test-env-check.ts"
   },
   "dependencies": {
     "@alcalzone/ansi-tokenize": "^0.3.0",
