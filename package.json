@@ -10,6 +10,7 @@
     "claude": "src/entrypoints/cli.tsx"
   },
   "scripts": {
+    "postinstall": "bash scripts/patch-sdk-headers.sh || true",
     "dev": "bun scripts/dev.ts",
     "build": "bun scripts/build-bundle.ts",
     "build:watch": "bun scripts/build-bundle.ts --watch",
