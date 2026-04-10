@@ -432,6 +432,117 @@ echo "Explain quantum computing" | node dist/cli.mjs -p
 
 ---
 
+## Prompt 10: System Prompt, Context & Memory System
+
+### 状态: ✅ 已完成
+
+### Part A: System Prompt Construction
+
+**关键发现**:
+- `getSystemPrompt()` 函数位于 `src/constants/prompts.ts` (444-577行)
+- 返回 `Promise<string[]>` - 系统提示的字符串数组
+- 包含多个部分：
+  1. SimpleIntroSection - 基础介绍
+  2. SimpleSystemSection - 系统说明
+  3. SimpleDoingTasksSection - 任务指导
+  4. ActionsSection - 执行操作注意事项
+  5. UsingYourToolsSection - 工具使用指南
+  6. ToneAndStyleSection - 语气和风格
+  7. OutputEfficiencySection - 输出效率
+  8. DynamicBoundary - 动态内容边界
+  9. SessionSpecificGuidance - 会话特定指导
+  10. MemorySection - 记忆系统
+  11. EnvironmentSection - 环境信息
+
+**模型特定变体**:
+- 不同模型有不同的知识截止点 (`getKnowledgeCutoff`)
+- USER_TYPE === 'ant' 时有额外的内部功能
+- Feature flags 控制可选功能
+
+### Part B: Context Gathering
+
+**测试结果**: ✅ 全部通过
+
+| 功能 | 命令 | 状态 |
+|------|------|------|
+| Git 状态收集 | `getSystemContext()` | ✅ 正常 |
+| 用户上下文 | `getUserContext()` | ✅ 正常 |
+| 环境信息 | `computeEnvInfo()` | ✅ 正常 |
+| 平台检测 | `getUnameSR()` | ✅ Darwin 25.2.0 |
+
+**收集的上下文信息**:
+- 当前分支、主分支、git 状态、最近提交
+- 工作目录、平台、Shell、OS 版本
+- ClaudeMd 文件内容、当前日期
+
+### Part C: Memory System
+
+**测试结果**: ✅ 全部通过
+
+| 功能 | 命令 | 状态 |
+|------|------|------|
+| 加载记忆提示 | `loadMemoryPrompt()` | ✅ 正常 |
+| 读取记忆文件 | `getMemoryFiles()` | ✅ 找到 1 个文件 |
+| 用户上下文记忆 | `getUserContext().claudeMd` | ✅ 670 字符 |
+
+**测试文件**: `CLAUDE.md` (项目根目录)
+- ✅ 成功读取并注入到系统提示
+- ✅ 记忆系统指导模型如何使用持久化记忆
+
+### Part D: Prompt Inspection Script
+
+**创建文件**: `scripts/test-prompt.ts`
+
+**功能**:
+- 构建完整的系统提示
+- 显示每个部分的内容和长度
+- 检查未解析的 MACRO 引用
+- 检查 undefined 值
+
+**测试结果**:
+```
+Total sections: 12
+Total length: 25860 characters
+✅ All MACRO references resolved
+✅ No undefined values in prompt
+```
+
+### Part E: MACRO References
+
+**状态**: ✅ 已验证
+
+`MACRO.ISSUES_EXPLAINER` 定义在 `src/shims/macro.ts`:
+```typescript
+ISSUES_EXPLAINER: 'report issues at https://github.com/anthropics/claude-code/issues'
+```
+
+所有 MACRO 引用在系统提示中都已正确解析。
+
+### Part F: Context Modules
+
+**检查目录**: `src/context/`
+
+该目录包含 UI 相关的 React Context:
+- `fpsMetrics.tsx` - 性能指标
+- `mailbox.tsx` - 消息邮箱
+- `modalContext.tsx` - 模态框
+- `notifications.tsx` - 通知系统
+- `overlayContext.tsx` - 覆盖层
+- `voice.tsx` - 语音功能
+
+这些不是系统上下文收集模块，而是 Ink UI 组件状态管理。
+
+**核心上下文收集**: `src/context.ts` (已验证 ✅)
+
+### 创建/更新的测试脚本
+
+1. `scripts/test-prompt.ts` - 系统提示检查
+2. `scripts/test-context.ts` - 上下文收集测试
+3. `scripts/test-memory.ts` - 记忆系统测试
+4. `CLAUDE.md` - 项目记忆文件示例
+
+---
+
 ## TODO 列表
 
 - [ ] 安装 `color-diff` 纯 JS 包恢复代码高亮功能
