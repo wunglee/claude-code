@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 
 const API_KEY = process.env.ANTHROPIC_API_KEY
+const BASE_URL = process.env.ANTHROPIC_BASE_URL || 'https://api.kimi.com/coding'
+const MODEL = process.env.ANTHROPIC_MODEL || 'kimi-for-coding'
 
-describe.skipIf(!API_KEY)('Anthropic API integration', () => {
+describe.skipIf(!API_KEY)('Kimi API integration', () => {
   let Anthropic: typeof import('@anthropic-ai/sdk').default
 
   beforeAll(async () => {
@@ -11,14 +13,14 @@ describe.skipIf(!API_KEY)('Anthropic API integration', () => {
   })
 
   it('creates an API client successfully', () => {
-    const client = new Anthropic({ apiKey: API_KEY })
+    const client = new Anthropic({ apiKey: API_KEY, baseURL: BASE_URL })
     expect(client).toBeDefined()
   })
 
   it('sends a simple message and gets a response', async () => {
-    const client = new Anthropic({ apiKey: API_KEY })
+    const client = new Anthropic({ apiKey: API_KEY, baseURL: BASE_URL })
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODEL,
       max_tokens: 64,
       messages: [{ role: 'user', content: 'Say "hello" and nothing else.' }],
     })
@@ -29,10 +31,10 @@ describe.skipIf(!API_KEY)('Anthropic API integration', () => {
   })
 
   it('streams a response without error', async () => {
-    const client = new Anthropic({ apiKey: API_KEY })
+    const client = new Anthropic({ apiKey: API_KEY, baseURL: BASE_URL })
     const chunks: string[] = []
     const stream = await client.messages.stream({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODEL,
       max_tokens: 32,
       messages: [{ role: 'user', content: 'Count to 3.' }],
     })
@@ -48,9 +50,9 @@ describe.skipIf(!API_KEY)('Anthropic API integration', () => {
   })
 
   it('handles tool use (calculator-style)', async () => {
-    const client = new Anthropic({ apiKey: API_KEY })
+    const client = new Anthropic({ apiKey: API_KEY, baseURL: BASE_URL })
     const response = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
+      model: MODEL,
       max_tokens: 256,
       tools: [
         {

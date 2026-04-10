@@ -41,7 +41,7 @@ function jsonPretty(obj: unknown): string {
 // ── Main ──────────────────────────────────────────────────────────────────
 
 async function main() {
-  const serverScript = resolve(PROJECT_ROOT, "mcp-server", "dist", "index.js");
+  const serverScript = resolve(PROJECT_ROOT, "mcp-server", "dist", "src", "index.js");
   const srcRoot = resolve(PROJECT_ROOT, "src");
 
   section("1. Spawning MCP server (stdio transport)");

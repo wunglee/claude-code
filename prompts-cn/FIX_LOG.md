@@ -570,3 +570,252 @@ cp node_modules/@anthropic-ai/sdk/core.mjs.backup node_modules/@anthropic-ai/sdk
 
 - Kimi 兼容性指南: `KIMI_COMPATIBILITY.md`
 - SDK Patch 脚本: `scripts/patch-sdk-for-kimi.sh`
+
+
+---
+
+## Prompt 11-16: MCP, Services, Bridge, Dev Runner, Production Bundle, Testing
+
+### 执行日期: 2026-04-10
+
+---
+
+## Prompt 11: MCP Client/Server Integration
+
+### 状态: ✅ 已完成
+
+### 发现与修复
+
+**1. MCP Server 路径问题**
+
+**问题**: `scripts/test-mcp.ts` 期望 `mcp-server/dist/index.js`，但实际构建输出到 `mcp-server/dist/src/index.js`
+
+**根因**: `mcp-server/tsconfig.json` 使用 `rootDir: "."`，导致 TypeScript 编译保留目录结构
+
+**修复**: 修改测试脚本路径
+```typescript
+// 修改前
+const serverScript = resolve(PROJECT_ROOT, "mcp-server", "dist", "index.js");
+
+// 修改后  
+const serverScript = resolve(PROJECT_ROOT, "mcp-server", "dist", "src", "index.js");
+```
+
+**验证**:
+```bash
+bun scripts/test-mcp.ts
+# 输出: 8 tools, 3 resources, 5 prompts - All tests passed
+```
+
+**2. MCP 配置发现**
+- 配置文件: `.mcp.json` (项目级), `~/.claude/mcp.json` (用户级)
+- 支持 transports: stdio, sse, http, ws
+- SDK: `@modelcontextprotocol/sdk` (^1.12.1)
+
+---
+
+## Prompt 12: Services Layer
+
+### 状态: ✅ 已完成
+
+### 服务验证结果
+
+| 服务 | 测试 | 结果 | 说明 |
+|------|------|------|------|
+| GrowthBook | `getFeatureValue_CACHED_MAY_BE_STALE` | ✅ | 返回默认值 (false) |
+| Analytics | `logEvent`, `logEventAsync` | ✅ | 无 sink 时不崩溃 |
+| Policy Limits | `isPolicyAllowed` | ✅ | 失败开放 (返回 true) |
+| Remote Settings | `isEligibleForRemoteManagedSettings` | ✅ | 无授权时返回 false |
+| Bootstrap | `fetchBootstrapData` | ✅ | 无 auth 时跳过 |
+| Session Memory | `DEFAULT_SESSION_MEMORY_CONFIG` | ✅ | 本地文件系统工作 |
+| Cost Tracking | `getTotalCost`, `getTotalDuration` | ✅ | 本地统计 |
+| Init | `init()` | ✅ | 完成初始化 |
+
+**总结果**: 17 passed, 0 failed, 0 skipped
+
+---
+
+## Prompt 13: Bridge Layer (IDE Integration)
+
+### 状态: ✅ 已验证
+
+### Bridge 架构
+
+**核心发现**:
+- Bridge 通过 `feature('BRIDGE_MODE')` 控制，**默认禁用**
+- 需要 claude.ai 订阅 (OAuth token)
+- 协议: WebSocket, HTTP 轮询
+- 认证: JWT
+
+**关键文件**:
+- `src/bridge/bridgeMain.ts` - 主协调器
+- `src/bridge/bridgeEnabled.ts` - 启用检查
+- `src/bridge/types.ts` - 协议类型
+
+**验证**:
+```typescript
+// src/shims/bun-bundle.ts
+BRIDGE_MODE: envBool('CLAUDE_CODE_BRIDGE_MODE', false)  // 默认 false
+```
+
+**结果**: Bridge 默认关闭，无相关错误，CLI 在终端模式工作正常
+
+---
+
+## Prompt 14: Development Runner
+
+### 状态: ✅ 已完成
+
+### 现有配置验证
+
+**Dev 脚本** (`scripts/dev.ts`):
+```typescript
+// 已存在且工作正常
+export {}  // 模块声明（已添加）
+await import('../src/shims/macro.js')
+await import('../src/entrypoints/cli.js')
+```
+
+**TypeScript 配置** (`scripts/tsconfig.json`):
+```json
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",  // 支持 JSX 解析
+    "moduleResolution": "bundler"
+  }
+}
+```
+
+**验证**:
+```bash
+bun run dev --version
+# 输出: 0.0.0-leaked (Claude Code) ✅
+```
+
+---
+
+## Prompt 15: Production Bundle
+
+### 状态: ✅ 已完成
+
+### 构建系统验证
+
+**构建脚本** (`scripts/build-bundle.ts`):
+- 已配置 tree shaking
+- Define 替换: `process.env.USER_TYPE = "external"`
+- Minification: 支持 `--minify` 标志
+- Source maps: 外部映射
+
+**构建结果**:
+```bash
+bun run build
+# 输出:
+#   dist/cli.mjs      20.2mb
+#   dist/cli.mjs.map  38.3mb
+#   Done in 1022ms
+```
+
+**验证**:
+```bash
+node dist/cli.mjs --version
+# 输出: 0.0.0-leaked (Claude Code) ✅
+```
+
+**package.json scripts**:
+```json
+{
+  "build": "bun scripts/build-bundle.ts",
+  "build:prod": "bun scripts/build-bundle.ts --minify",
+  "build:watch": "bun scripts/build-bundle.ts --watch"
+}
+```
+
+---
+
+## Prompt 16: Test Infrastructure
+
+### 状态: ✅ 已完成
+
+### 现有测试架构
+
+**测试框架**: Vitest (v4.1.2)
+
+**配置文件** (`vitest.config.ts`):
+- 已配置 `resolve-js-to-ts` 插件
+- 已配置 `bun:bundle` → `src/shims/bun-bundle.ts` 别名
+- **新增**: `color-diff-napi` → `src/shims/color-diff-napi.ts` 别名
+
+**修复**:
+```typescript
+// vitest.config.ts 添加
+{ find: 'color-diff-napi', replacement: resolve(__dirname, 'src/shims/color-diff-napi.ts') }
+```
+
+### 测试结果
+
+| 测试文件 | 测试数 | 状态 |
+|----------|--------|------|
+| shims/macro.test.ts | 4 | ✅ |
+| shims/bun-bundle.test.ts | 4 | ✅ |
+| integration/mcp.test.ts | 3 | ✅ |
+| integration/api.test.ts | 4 | ✅ |
+| smoke/context.test.ts | 5 | ✅ |
+| smoke/tools.test.ts | 9 | ✅ |
+| smoke/prompt.test.ts | 5 | ✅ |
+| smoke/commands.test.ts | 6 | ✅ |
+
+**总结果**: 8/8 文件通过, 40/40 测试通过 ✅
+
+### API 测试 Kimi 适配
+
+**修改** (`tests/integration/api.test.ts`):
+```typescript
+const BASE_URL = process.env.ANTHROPIC_BASE_URL || 'https://api.kimi.com/coding'
+const MODEL = process.env.ANTHROPIC_MODEL || 'kimi-for-coding'
+
+// 所有 Anthropic 客户端实例添加 baseURL
+new Anthropic({ apiKey: API_KEY, baseURL: BASE_URL })
+```
+
+### 平台检测修复
+
+**修改** (`tests/smoke/context.test.ts`):
+```typescript
+// 修改前: 硬编码期望 'linux'
+expect(process.platform).toBe('linux')
+
+// 修改后: 接受任何有效平台
+expect(['darwin', 'linux', 'win32']).toContain(process.platform)
+```
+
+---
+
+## 环境变量配置
+
+### Kimi API 配置 (已通过 .zshrc 设置)
+
+```bash
+ANTHROPIC_API_KEY=sk-kimi-...
+ANTHROPIC_BASE_URL=https://api.kimi.com/coding  # 注意: 无 /v1 后缀
+ANTHROPIC_MODEL=kimi-for-coding
+ANTHROPIC_DEFAULT_SONNET_MODEL=kimi-for-coding
+ANTHROPIC_DEFAULT_OPUS_MODEL=kimi-for-coding
+ANTHROPIC_SMALL_FAST_MODEL=kimi-for-coding
+```
+
+**重要**: `ANTHROPIC_BASE_URL` 必须 **不包含 `/v1`**，否则 SDK 会构建错误的 URL (`.../v1/v1/messages`)
+
+---
+
+## 总结
+
+| Prompt | 任务 | 状态 | 关键成果 |
+|--------|------|------|----------|
+| 11 | MCP Integration | ✅ | `test-mcp.ts` 通过 (8 tools) |
+| 12 | Services Layer | ✅ | `test-services.ts` 通过 (17/17) |
+| 13 | Bridge Layer | ✅ | 默认禁用，无错误 |
+| 14 | Dev Runner | ✅ | `bun run dev` 工作 |
+| 15 | Production Bundle | ✅ | `dist/cli.mjs` (20.2MB) |
+| 16 | Testing | ✅ | 40/40 测试通过 |
+
+**所有 Prompt 11-16 已完成！**
