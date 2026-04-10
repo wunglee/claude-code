@@ -1214,3 +1214,92 @@ bun run dev --version
 | `src/skills/bundled/verify/examples/server.md` | 271 bytes | ✅ 有内容 |
 
 ---
+
+
+---
+
+## 2026-04-10: 修复交互式 TUI 界面不显示问题
+
+### 问题
+
+`bun run dev` 启动后只显示光标闪烁，没有交互式 TUI 界面。
+
+### 根因分析
+
+通过对比 AlienCode 项目的修复文档，发现三个关键问题：
+
+1. **TTY 检测问题** (`src/main.tsx:803`)
+   - Bun 1.3.11 有时返回 `undefined` 而非 `true`
+   - `!process.stdout.isTTY` → `true` 误判为非交互模式
+
+2. **TungstenLiveMonitor 组件缺失**
+   - `src/screens/REPL.tsx` 导入该模块但文件不存在
+   - 导致 REPL 组件无法加载
+
+3. **ultraplan/prompt.txt 文件缺失**
+   - `src/commands/ultraplan.tsx` 导入该文件但不存在
+   - 阻碍命令模块加载
+
+4. **useEffectEvent Hook 不支持**
+   - React 19 实验性 API 不被 Bun 1.3.11 支持
+   - 两个文件使用了 `useEffectEvent`：
+     - `src/state/AppState.tsx`
+     - `src/components/tasks/BackgroundTasksDialog.tsx`
+
+### 修复方案
+
+**修复 1: TTY 检测** (`src/main.tsx:803`)
+```typescript
+// 修复前
+const isNonInteractive = hasPrintFlag || hasInitOnlyFlag || hasSdkUrl || !process.stdout.isTTY;
+
+// 修复后
+// Fix: Bun 1.3.11 sometimes returns undefined instead of true in TTY environments.
+// Using === false ensures we only enter non-interactive mode when explicitly not a TTY.
+const isNonInteractive = hasPrintFlag || hasInitOnlyFlag || hasSdkUrl || process.stdout.isTTY === false;
+```
+
+**修复 2: TungstenLiveMonitor Stub** (新建文件)
+```typescript
+// src/tools/TungstenTool/TungstenLiveMonitor.tsx
+export function TungstenLiveMonitor(): React.ReactElement | null {
+  return null;  // Ant-only feature, always returns null in external builds
+}
+export default TungstenLiveMonitor;
+```
+
+**修复 3: ultraplan/prompt.txt** (新建文件)
+```
+# Ultra Plan
+You are an advanced planning assistant...
+```
+
+**修复 4: useEffectEvent Polyfill**
+
+在两个文件中添加本地 polyfill：
+```typescript
+// Polyfill for useEffectEvent (React 19 experimental feature not supported by Bun 1.3.11)
+function useEffectEvent<T extends (...args: any[]) => any>(fn: T): T {
+  const ref = useRef(fn);
+  useLayoutEffect(() => {
+    ref.current = fn;
+  });
+  return useCallback((...args: Parameters<T>): ReturnType<T>) => {
+    return ref.current(...args);
+  }, []) as T;
+}
+```
+
+### 验证
+
+```bash
+npm run dev
+# 输出: 终端标题设置 ✳ Claude Code
+# TUI 界面正常渲染 ✅
+```
+
+### 参考
+
+AlienCode 项目修复文档: `/Users/wangli/projects/AlienCode/claude/docs-cn/MINIMAL_FIX_COMPLETE.md`
+
+---

@@ -800,7 +800,9 @@ export async function main() {
   const hasPrintFlag = cliArgs.includes('-p') || cliArgs.includes('--print');
   const hasInitOnlyFlag = cliArgs.includes('--init-only');
   const hasSdkUrl = cliArgs.some(arg => arg.startsWith('--sdk-url'));
-  const isNonInteractive = hasPrintFlag || hasInitOnlyFlag || hasSdkUrl || !process.stdout.isTTY;
+  // Fix: Bun 1.3.11 sometimes returns undefined instead of true in TTY environments.
+  // Using === false ensures we only enter non-interactive mode when explicitly not a TTY.
+  const isNonInteractive = hasPrintFlag || hasInitOnlyFlag || hasSdkUrl || process.stdout.isTTY === false;
 
   // Stop capturing early input for non-interactive modes
   if (isNonInteractive) {
